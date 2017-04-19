@@ -182,8 +182,6 @@ cur.execute(table_spec)
 # # USE AN INNER JOIN QUERY HERE:
 
 
-
-
 # #You must process the data you gather and store and extract from the database in at least four
 
 # ## Manipulating data with comprehensions & libraries
@@ -208,7 +206,6 @@ cur.execute(table_spec)
 # twitter_info_diction = {}
 # for x in screen_names:
 # 	twitter_info_diction[x] = description_text2
-
 
 #Create classes of test cases:
 class CachingTests(unittest.TestCase):
