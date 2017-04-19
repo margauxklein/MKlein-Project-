@@ -35,8 +35,6 @@ except:
 	#if CACHE_DICTION IS EMPTY..
 	CACHE_DICTION = {}
 
-
-
 #write a function to get and cache twitter data, accepts a phrase as input
 #Pick at least 3 movie search terms, put those strings into a list
 #Movie_search_terms is a list of three movie names, + to represent where spaces would otherwise be in URL
