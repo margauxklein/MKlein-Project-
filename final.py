@@ -223,6 +223,8 @@ more_than_25_rts = cur.execute(query).fetchall()
 
 query = "SELECT * FROM Users WHERE followers > 500"
 more_than_500_followers = cur.execute(query).fetchall()
+
+
 # print(more_than_500_followers[0])
 # # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
 query = "SELECT location FROM Users WHERE num_favs > 0"
@@ -233,12 +235,13 @@ descriptions_fav_users = [tup[0] for tup in descriptions_fav_users]
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
 query = 'SELECT screen_name, location, followers FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
 joined_result = cur.execute(query).fetchall()
-for x in joined_result[0:20]:
+for x in joined_result[0:10]:
 	share_joined_result = "Here are the users with over 100 retweets: User with screenname: {} from {} who has {} followers!".format(screen_name, location, followers)
 # print (share_joined_result)
 # print (joined_result)
 # print (share_joined_result)
 
+#USE OF LIST COMPREHENSION AND SORTING WITH A KEY PARAMETER BELOW
 query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
 good_movies = cur.execute(query).fetchall()
 best_movies = [list(elem) for elem in good_movies]
@@ -247,6 +250,7 @@ best_movie = str(best_movies[0][0])
 x = sorted(good_movies, key = lambda k: k[-1], reverse = True)
 best_movie1 = "You should watch {}. It got a great rating!".format(best_movie)
 # #You must process the data you gather and store and extract from the database in at least four
+#USE OF COUNTER, REGEX AND SET COMPREHENSION BELOW
 query = "SELECT tweet_text from Tweets"
 tweets = cur.execute(query).fetchall()
 count_a = 0
@@ -326,7 +330,32 @@ class testingClasses_Movie(unittest.TestCase):
 		a = Movie(dict)
 		b =  {}
 		self.assertEqual(type(a.get_Tweets_user()), type(b))
-
+	def test_str_method(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "string"
+		self.assertEqual(type(a.__str__()), type("string"))
+	def test_str_method_2(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "string"
+		x = a.__str__()
+		y = x.split()
+		self.assertTrue(len(y) > 6)
+	def test_str_method_3(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "string"
+		x = a.__str__()
+		y = x.split()
+		self.assertTrue(type(y[0]), type("hi"))
+	def test_str_method_3(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "string"
+		x = a.__str__()
+		y = x.split()
+		self.assertEqual(y[0], "Movie")
 #Testing initializer of Tweet class:
 class TestTweetClass(unittest.TestCase):
 	def testTweetie(self):
@@ -363,11 +392,6 @@ class TestTweetClass(unittest.TestCase):
 		x = a.save_user_data()
 		b = "New York"
 		self.assertEqual(type(a.location), type(b))
-	def test_str_method(self):
-		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
-		a = Movie(dict)
-		b = "string"
-		self.assertEqual(type(a.__str__()), type("string"))
 
 # #Tests the return value of the get_omdb_data function
 class Test_OMDB_Data(unittest.TestCase):
