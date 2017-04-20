@@ -83,16 +83,6 @@ class Movie():
 			cache_file.close()
 		return public_tweets
 
-
-
-#Create a list of instances of the Movie class called list_of_movies
-list_of_movies = []
-#iterate through each movie in the list "movie_search_terms". for every movie in that list, call the get_omdb_data function on it
-for x in movie_search_terms:
-	movie_search = get_omdb_data(x)
-	y = Movie(movie_search)
-	list_of_movies.append(y)
-	#print(y.get_Tweets_user()["statuses"][0])
 #Create a class to handle the Twitter data:
 class Tweet():
 	#initializing function will accept Tweet_dict as input 
@@ -104,22 +94,47 @@ class Tweet():
 		self.num_retweets = Tweet_dict['retweet_count']
 	#use your function to access data about a Twitter user to get information about each of the Users in the "neighborhood", as it's called in social network studies -- every user who posted any of the tweets you retrieved and every user who is mentioned in them.
 	def save_user_data(self):
-		user = API.get_user(self.user)
-		#self.user_id = user['id_str']
+		
+		unique_identifier = "twitter_user{}".format(self.user) # seestring formatting chapter
+		# see if that director name is in the cache diction!
+		if unique_identifier in CACHE_DICTION: # if it is...
+			user = CACHE_DICTION[unique_identifier] # grab the data from the cache!
+		else:
+			user = api.get_user(self.user) # get it from the internet
+			# but also, save in the dictionary to cache it!
+			CACHE_DICTION[unique_identifier] = user# add it to the dictionary -- new key-val pair
+			# and then write the whole cache dictionary, now with new info added, to the file, so it'll be there even after your program closes!
+			cache_file = open(CACHE_FNAME,'w') # open the cache file for writing
+			cache_file.write(json.dumps(CACHE_DICTION)) # make the whole dictionary holding data and unique identifiers into a json-formatted string, and write that wholllle string to a file so you'll have it next time!
+			cache_file.close()
+
 		self.screen_name = user['screen_name']
 		self.favorites = user['favourites_count']
 		self.followers = user['followers_count']
 		self.tweets = user['statuses_count']
 		self.following = user['friends_count']
 		self.location = user['location']
-#NEED INFORMATION ON USERS' NEIGHBORHOODS
 
-#Create a list of instances of the tweet class called list_of_tweets:
-list_of_tweets = []
-for tweet in y.get_Tweets_user()['statuses']:
-	x = Tweet(tweet)
-	list_of_tweets.append(x)
-print(list_of_tweets)
+#Create a list of instances of the Movie class called list_of_movies
+list_of_movies = []
+#iterate through each movie in the list "movie_search_terms". for every movie in that list, call the get_omdb_data function on it
+for x in movie_search_terms:
+	movie_search = get_omdb_data(x)
+	y = Movie(movie_search)
+	list_of_movies.append(y)
+	#print(y.get_Tweets_user()["statuses"][0])
+tweet_list = []
+for x in list_of_movies:
+	for y in (x.get_Tweets_user()['statuses']):
+		tweet_list.append(Tweet(y))
+	x.list_of_tweets = tweet_list
+	tweet_list = []
+for x in list_of_movies:
+	print(x.list_of_tweets)
+	for y in x.list_of_tweets:
+		y.save_user_data()
+		print(y.screen_name)
+#NEED INFORMATION ON USERS' NEIGHBORHOODS
 
 
 
@@ -139,61 +154,118 @@ cur = conn.cursor()
 cur.execute('DROP TABLE IF EXISTS Tweets')
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Tweets(tweet_id TEXT PRIMARY KEY, '
-table_spec += 'user_id TEXT, time_posted TIMESTAMP, tweet_text TEXT, retweets INTEGER)'
+table_spec += 'user_id TEXT, tweet_text TEXT, movie TEXT, retweets INTEGER, favorites INTEGER)'
 cur.execute(table_spec)
+
 #NEED INSERT STATEMENT ABOVE TO INSERT DATA INTO RESPECTIVE COLUMNS!!! 
 
 #Create a Users Table (For Twitter Users), user_id as primary key, screen_name, num_favs and description as other columns of the table:
 cur.execute('DROP TABLE IF EXISTS Users')
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Users(user_id TEXT PRIMARY KEY, '
-table_spec += 'screen_name TEXT, num_favs INTEGER, description TEXT)'
+table_spec += 'screen_name TEXT, num_favs INTEGER, location TEXT)'
 #NEED INSERT STATEMENT ABOVE TO INSERT DATA INTO RESPECTIVE COLUMNS!
 cur.execute(table_spec)
 
 
-# #Create a Movies Table, movie_id as the primary key, movie_title, directors, IMDB_rating, run_time, num_languages, and first_actor as other columns of this table
-# cur.execute('DROP TABLE IF EXISTS Movies')
-# table_spec = 'CREATE TABLE IF NOT EXISTS'
-# table_spec += 'Movies(movie_id TEXT PRIMARY KEY,'
-# table_spec += 'movie_title TEXT, directors TEXT, IMDB_rating REAL, run_time INTEGER, num_languages INTEGER, first_actor TEXT'
-# cur.execute(table_spec)
+#Create a Movies Table, movie_id as the primary key, movie_title, directors, IMDB_rating, run_time, num_languages, and first_actor as other columns of this table
+cur.execute('DROP TABLE IF EXISTS Movies')
+table_spec = 'CREATE TABLE IF NOT EXISTS '
+table_spec += 'Movies(movie_id TEXT PRIMARY KEY,'
+table_spec += 'movie_title TEXT, directors TEXT, IMDB_rating TEXT, country TEXT, num_languages INTEGER, first_actor TEXT)'
+cur.execute(table_spec)
+
+for each_movie in list_of_movies:
+	movie_id = each_movie.ID
+	movie_title = each_movie.title
+	directors = each_movie.director
+	IMDB_rating = each_movie.rating
+	country = each_movie.country[0]
+	num_languages = len(each_movie.languages)
+	first_actor = each_movie.actors[0]
+	statement = 'INSERT OR IGNORE INTO Movies Values (?, ?, ?, ?, ?, ?, ?)'
+	cur.execute(statement, (movie_id, movie_title, directors, IMDB_rating, country, num_languages, first_actor))
+	conn.commit()
+
+	for each_tweet in each_movie.list_of_tweets:
+		tweet_id = each_tweet.tweetID
+		user_id = each_tweet.user
+		tweet_text = each_tweet.tweetText
+		movie = each_movie.ID
+		retweets = each_tweet.num_retweets
+		favorites = each_tweet.num_favs
+		statement2 = 'INSERT OR IGNORE INTO Tweets Values (?, ?, ?, ?, ?, ?)'
+		cur.execute(statement2, (tweet_id, user_id, tweet_text, movie, retweets, favorites))
+		conn.commit()
+
+		screen_name = each_tweet.screen_name
+		num_favs = each_tweet.favorites
+		location = each_tweet.location
+		statement3 = 'INSERT OR IGNORE INTO Users Values (?, ?, ?, ?)'
+		cur.execute(statement3, (user_id, screen_name, num_favs, location))
+		conn.commit()
 
 
 #Process the data and create an output file!
 #Make queries to the database to grab intersections of data, and then use at least four of the processing mechanisms in the project requirements to find out something interesting or cool or weird about it. 
 #MUST HAVE AT LEAST 3 QUERIES, resulting in information that would have been more difficult to combine without use of the database, and use the results of the queries to process your data
-# # Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
-# query  = "SELECT * FROM Users"
-# users_info = cur.execute(query).fetchall()
+# Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
+query  = "SELECT * FROM Users"
+users_info = cur.execute(query).fetchall()
 
-# # Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
-# query = "SELECT * FROM Tweets WHERE retweets > 25"
-# more_than_25_rts = cur.execute(query).fetchall()
+# Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
+query = "SELECT * FROM Tweets WHERE retweets > 25"
+more_than_25_rts = cur.execute(query).fetchall()
 
 # # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
-# query = "SELECT description FROM Users WHERE num_favs > 25"
-# descriptions_fav_users = cur.execute(query).fetchall()
-# descriptions_fav_users = [tup[0] for tup in descriptions_fav_users]
+query = "SELECT location FROM Users WHERE num_favs > 0"
+descriptions_fav_users = cur.execute(query).fetchall()
+descriptions_fav_users = [tup[0] for tup in descriptions_fav_users]
 
 # # USE AN INNER JOIN QUERY HERE:
-
+# Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
+query = 'SELECT screen_name, location FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
+joined_result = cur.execute(query).fetchall()
 
 # #You must process the data you gather and store and extract from the database in at least four
+query = "SELECT tweet_text from Tweets"
+tweets = cur.execute(query).fetchall()
+count_a = 0
+unique_words = set()
+for x in tweets:
+	if 'a' in x[0]:
+		count_a += 1
+	match = re.findall(r'(\S+)', x[0])
+	if match:
+		for each in match:
+			unique_words.add(each)
 
 # ## Manipulating data with comprehensions & libraries
 
-# ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
-# #description_words =  [for x in description_fav_user x.split('')]
-# description_words = set()
+with open('project_output.txt', 'w') as outfile:
+	output = """
+		my output{}
+"""
+	for movie in cur.execute("SELECT movie_title, movie_id from Movies").fetchall():
+		output += "unique_words in {}\n".format(movie[0])
+		unique_words = set()
+		for tweet in cur.execute("SELECT tweet_text from Tweets WHERE Tweets.movie = ?", (movie[1],)).fetchall():
+			tweet_text = tweet[0]
+			match = re.findall(r'(\S+)', tweet_text)
+			if match:
+				for each in match:
+					unique_words.add(each)
+		for word in unique_words:
+			output += word + "\n"	
 
-# for str1 in descriptions_fav_users:
-#  	match = re.findall(r'(\S+)', str1)
-#  	if match:
-#  		for each in match:
-#  			description_words.add(each)
-#  	else:
-#  		description_words = set()
+
+
+	
+	outfile.write(output)
+
+
+
+
 # # Write code to create a dictionary whose keys are Twitter screen names and whose associated values are lists of tweet texts that that user posted. You may need to make additional queries to your database! To do this, you can use, and must use at least one of: the DefaultDict container in the collections library, a dictionary comprehension, list comprehension(s). Y
 # # You should save the final dictionary in a variable called twitter_info_diction.
 # query = "SELECT description from USERS"
@@ -204,25 +276,27 @@ cur.execute(table_spec)
 # for x in screen_names:
 # 	twitter_info_diction[x] = description_text2
 
+
+# Write data to a text file - a summary stats page
 #Create classes of test cases:
 class CachingTests(unittest.TestCase):
 	def test_cache_diction(self):
 		self.assertEqual(type(CACHE_DICTION),type({}),"Testing whether you have a CACHE_DICTION dictionary")
-	def test_cache_file(self):
-		f = open("SI206_project_final.json","r")
-		s = f.read()
-		f.close()
-		self.assertEqual(type(s),type({}),"Doesn't look like you have a cache file with the right name / with content in it")	
-class TestCases(unittest.TestCase):
-	#Create a test to ensure that list_of_tweets is a list
-	def test_list_of_tweets(self):
-		self.assertEqual(type(list_of_tweets), type([]))
-	#Create a test to make sure that list_of_movies is a list
-	def test_list_of_movies(self):
-		self.assertEqual(type(test_list_of_movies), type([]))
-	#create a test to make sure that the type of OMDB_dict is a dictionary
-	def test_type_OMDB_dict(self):
-		self.assertEqual(type(OMDB_dict), type({}))
+	# def test_cache_file(self):
+	# 	f = open("SI206_project_final.json","r")
+	# 	s = f.read()
+	# 	f.close()
+	# 	self.assertEqual(type(s),type({}),"Doesn't look like you have a cache file with the right name / with content in it")	
+# class TestCases(unittest.TestCase):
+# 	#Create a test to ensure that list_of_tweets is a list
+# 	def test_list_of_tweets(self):
+# 		self.assertEqual(type(list_of_tweets), type([]))
+# 	#Create a test to make sure that list_of_movies is a list
+# 	def test_list_of_movies(self):
+# 		self.assertEqual(type(test_list_of_movies), type([]))
+# 	#create a test to make sure that the type of OMDB_dict is a dictionary
+# 	def test_type_OMDB_dict(self):
+# 		self.assertEqual(type(OMDB_dict), type({}))
 class TestDatabases(unittest.TestCase):
 	def test_users_table(self):
 		conn = sqlite3.connect('finalproject.db')
@@ -236,19 +310,22 @@ class TestDatabases(unittest.TestCase):
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Tweets');
 		result = cur.fetchall()
-		self.assertTrue(len(result[1])==5,"Testing that there are 5 columns in the Tweets table")
+		self.assertTrue(len(result[1])==6,"Testing that there are 6 columns in the Tweets table")
 	def test_users(self):
 		conn = sqlite3.connect('finalproject.db')
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Users');
 		result = cur.fetchall()
-		self.assertTrue(len(result[1])==5,"Testing that there are 5 columns in the Users table")
-	# def test_movies(self):
-	# 	conn = sqlite3.connect('finalproject.db')
-	# 	cur = conn.cursor()
-	# 	cur.execute('SELECT * FROM Movies');
-	# 	result = cur.fetchall()
-	# 	self.assertTrue(len(result[1])==5,"Testing that there are 7 columns in the Movies table")	
+		self.assertTrue(len(result[1])==4,"Testing that there are 4 columns in the Users table")
+	def test_movies(self):
+		conn = sqlite3.connect('finalproject.db')
+		cur = conn.cursor()
+		cur.execute('SELECT * FROM Movies');
+		result = cur.fetchall()
+		self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")	
 if __name__ == "__main__":
 	unittest.main(verbosity=2)
 
+#README DOC
+#Finish output file using two more queries 
+#Finish test cases ( 2 for each method ) and make sure all pass
