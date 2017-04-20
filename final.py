@@ -130,10 +130,10 @@ for x in list_of_movies:
 	x.list_of_tweets = tweet_list
 	tweet_list = []
 for x in list_of_movies:
-	print(x.list_of_tweets)
+	#print(x.list_of_tweets)
 	for y in x.list_of_tweets:
 		y.save_user_data()
-		print(y.screen_name)
+		#print(y.screen_name)
 #NEED INFORMATION ON USERS' NEIGHBORHOODS
 
 
@@ -227,6 +227,13 @@ descriptions_fav_users = [tup[0] for tup in descriptions_fav_users]
 query = 'SELECT screen_name, location FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
 joined_result = cur.execute(query).fetchall()
 
+query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
+good_movies = cur.execute(query).fetchall()
+best_movies = [list(elem) for elem in good_movies]
+best_movie = str(best_movies[0][0])
+#print (type(best_movie))
+x = sorted(good_movies, key = lambda k: k[-1], reverse = True)
+best_movie1 = "You should watch {}. It got a great rating!".format(best_movie)
 # #You must process the data you gather and store and extract from the database in at least four
 query = "SELECT tweet_text from Tweets"
 tweets = cur.execute(query).fetchall()
@@ -247,7 +254,7 @@ with open('project_output.txt', 'w') as outfile:
 		my output{}
 """
 	for movie in cur.execute("SELECT movie_title, movie_id from Movies").fetchall():
-		output += "unique_words in {}\n".format(movie[0])
+		output += "unique words in tweets from {}: \n".format(movie[0])
 		unique_words = set()
 		for tweet in cur.execute("SELECT tweet_text from Tweets WHERE Tweets.movie = ?", (movie[1],)).fetchall():
 			tweet_text = tweet[0]
@@ -258,7 +265,7 @@ with open('project_output.txt', 'w') as outfile:
 		for word in unique_words:
 			output += word + "\n"	
 
-
+	output += "\n" + "\n" + best_movie1
 
 	
 	outfile.write(output)
@@ -297,13 +304,25 @@ class CachingTests(unittest.TestCase):
 # 	#create a test to make sure that the type of OMDB_dict is a dictionary
 # 	def test_type_OMDB_dict(self):
 # 		self.assertEqual(type(OMDB_dict), type({}))
+
+
+# class TestClasses(unittest.TestCase):
+# 	def testTweetclass(self):
+# 		x = Tweet(Tweet_dict)
+# 		self.assertEqual(type(x.tweetText), type("hi"))
+# 	def testTweetclass2(self):
+# 		a = Tweet(Tweet_dict)
+# 		self.assertEqual(type(a.num_favs), type(1))
+class test_moviesearch(unittest.TestCase):
+	def test_movie_search(self):
+		self.assertEqual(len(movie_search_terms), 3)
+# class testingClasses(unittest.TestCase):
+# 	def test_movie_str_method(self):
+# 		x = Movie()
+# 		y = "hi"
+# 		self.assertEqual(type(x.__str__()), type(y))
+
 class TestDatabases(unittest.TestCase):
-	def testTweetclass(self):
-		x = Tweet()
-		self.assertEqual(type(x.tweetText), type("hi"))
-	def testTweetclass2(self):
-		a = Tweet()
-		self.assertEqual(type(a.num_favs), type(1))
 	def test_users_table(self):
 		conn = sqlite3.connect('finalproject.db')
 		cur = conn.cursor()
