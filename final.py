@@ -298,6 +298,12 @@ class CachingTests(unittest.TestCase):
 # 	def test_type_OMDB_dict(self):
 # 		self.assertEqual(type(OMDB_dict), type({}))
 class TestDatabases(unittest.TestCase):
+	def testTweetclass(self):
+		x = Tweet()
+		self.assertEqual(type(x.tweetText), type("hi"))
+	def testTweetclass2(self):
+		a = Tweet()
+		self.assertEqual(type(a.num_favs), type(1))
 	def test_users_table(self):
 		conn = sqlite3.connect('finalproject.db')
 		cur = conn.cursor()
