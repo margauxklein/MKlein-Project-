@@ -242,14 +242,29 @@ for x in joined_result[0:10]:
 # print (share_joined_result)
 
 #USE OF LIST COMPREHENSION AND SORTING WITH A KEY PARAMETER BELOW
-query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
+# query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
+# good_movies = cur.execute(query).fetchall()
+# best_movies = [list(elem) for elem in good_movies]
+# best_movie = str(best_movies[0][0])
+# #print (type(best_movie))
+# x = sorted(good_movies, key = lambda k: k[-1], reverse = True)
+# best_movie1 = "You should watch {}. It got a great rating!".format(best_movie)
+
+query = 'SELECT movie_title, IMDB_rating FROM Movies'
 good_movies = cur.execute(query).fetchall()
-best_movies = [list(elem) for elem in good_movies]
-best_movie = str(best_movies[0][0])
-#print (type(best_movie))
 x = sorted(good_movies, key = lambda k: k[-1], reverse = True)
-best_movie1 = "You should watch {}. It got a great rating!".format(best_movie)
+best_movie = [list(elem)[0] for elem in x]
+best_movie1 = str(best_movie[0])
+best_movie2 = str(best_movie[1])
+best_movie_ = "MOVIE RECOMMENDATIONS: You should watch {}. It got a great rating! If you have time, {} also got a great rating.".format(best_movie1, best_movie2)
+#print (best_movie_)
+
+
+
+
+# best_movie1 = "You should watch {}. It got a great rating!".format(best_movie)
 # #You must process the data you gather and store and extract from the database in at least four
+
 #USE OF COUNTER, REGEX AND SET COMPREHENSION BELOW
 query = "SELECT tweet_text from Tweets"
 tweets = cur.execute(query).fetchall()
@@ -281,12 +296,12 @@ with open('project_output.txt', 'w') as outfile:
 		for word in unique_words:
 			output += word + "\n"	
 
-	output += "\n" + "\n" + best_movie1
-	output += "\n" + "\n" + "Here are the users with over 100 retweets:"
+	output += "\n" + "\n" + best_movie_
+	output += "\n" + "\n" + "What's popular? Well here are the users with over 100 retweets:"
 	for x in joined_result[0:10]:
 		share_joined_result = "User with screenname: {} from {} who has {} followers!".format(x[0], x[1], x[2])
 		output += "\n" + share_joined_result
-	output += "\n" + "\n" + "These users have over 500 followers:"
+	output += "\n" + "\n" + "Which users are popular? These users have over 500 followers:"
 	for x in more_than_500_followers:
 		printed = "User {} from {} has {} followers".format(x[1], x[3], x[4])
 		output += "\n" + printed
@@ -520,7 +535,20 @@ class TestingQueries(unittest.TestCase):
 				for each in match:
 					unique_words.add(each)
 		self.assertEqual(type(unique_words), type(a))
-		
+	def test_good_movie_query(self):
+		query = 'SELECT movie_title, IMDB_rating FROM Movies'
+		good_movies = cur.execute(query).fetchall()
+		self.assertEqual(type(good_movies), type([]))
+	def test_good_movie_query2(self):
+		query = 'SELECT movie_title, IMDB_rating FROM Movies'
+		good_movies = cur.execute(query).fetchall()
+		x = ('hi', 'bye')
+		self.assertEqual(type(good_movies[0]), type(x))
+	def test_good_movie_query3(self):
+		query = 'SELECT movie_title, IMDB_rating FROM Movies'
+		good_movies = cur.execute(query).fetchall()
+		x = "hi"
+		self.assertEqual(type(good_movies[0][0]), type(x))
 if __name__ == "__main__":
 	unittest.main(verbosity=2)
 
