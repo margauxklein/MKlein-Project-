@@ -223,7 +223,7 @@ more_than_25_rts = cur.execute(query).fetchall()
 
 query = "SELECT * FROM Users WHERE followers > 500"
 more_than_500_followers = cur.execute(query).fetchall()
-
+# print(more_than_500_followers[0])
 # # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
 query = "SELECT location FROM Users WHERE num_favs > 0"
 descriptions_fav_users = cur.execute(query).fetchall()
@@ -468,6 +468,10 @@ class TestingQueries(unittest.TestCase):
 		query = "SELECT * FROM Users WHERE followers > 500"
 		more_than_500_followers = cur.execute(query).fetchall()
 		self.assertEqual(type(more_than_500_followers), type([]))
+	def testing_followers_query(self):
+		query = "SELECT * FROM Users WHERE followers > 500"
+		more_than_500_followers = cur.execute(query).fetchall()
+		self.assertTrue(more_than_500_followers[0][4] > 500)
 	def testing_users_info(self):
 		query  = "SELECT * FROM Users"
 		users_info = cur.execute(query).fetchall()
