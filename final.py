@@ -37,7 +37,7 @@ except:
 #write a function to get and cache twitter data, accepts a phrase as input
 #Pick at least 3 movie search terms, put those strings into a list
 #Movie_search_terms is a list of three movie names, + to represent where spaces would otherwise be in URL
-movie_search_terms = ["The+Hunger+Games", "Mean+Girls", "Beauty+and+the+Beast"]
+movie_search_terms = ["The+Hunger+Games", "Mean+Girls", "Beauty+and+the+Beast", "Gifted", "Up", "Catching+Fire"]
 #Write and cache data from the OMDB API with a movie title search as input to the function:
 def get_omdb_data(movie_title_search):
 	base_url = "http://www.omdbapi.com/?"
@@ -51,6 +51,7 @@ def get_omdb_data(movie_title_search):
 		cache_file.write(json.dumps(CACHE_DICTION))
 		cache_file.close()
 	return info
+
 #Define a class movie
 class Movie():
 	#Write code to set up the initializing function of the Movie class, which accepts a dictionary that represents a movie (OMDB_dict). This class should have at least 3 instance variables
@@ -65,8 +66,8 @@ class Movie():
 		self.awards = OMDB_dict['Awards']
 	#Write a method to return a string of the title and director of the movie in a formatted way
 	def __str__(self):
-		x = "Movie title: {} is directed by {}".format(self.title + self.director)
-
+		x = "Movie title: {} is directed by {}".format(self.title, self.director)
+		return x 
 	#create a function that will search for the director name in the cache_diction. if it exists, retrieve that data. if the director's name is not in cache diction, make a request to the API
 	def get_Tweets_user(self):
 		unique_identifier = "twitter_{}".format(self.director) # seestring formatting chapter
@@ -82,7 +83,10 @@ class Movie():
 			cache_file.write(json.dumps(CACHE_DICTION)) # make the whole dictionary holding data and unique identifiers into a json-formatted string, and write that wholllle string to a file so you'll have it next time!
 			cache_file.close()
 		return public_tweets
-
+# dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+# a = Movie(dict)		
+# b = a.__str__()
+# print(b)
 #Create a class to handle the Twitter data:
 class Tweet():
 	#initializing function will accept Tweet_dict as input 
@@ -163,7 +167,7 @@ cur.execute(table_spec)
 cur.execute('DROP TABLE IF EXISTS Users')
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Users(user_id TEXT PRIMARY KEY, '
-table_spec += 'screen_name TEXT, num_favs INTEGER, location TEXT)'
+table_spec += 'screen_name TEXT, num_favs INTEGER, location TEXT, followers INTEGER)'
 #NEED INSERT STATEMENT ABOVE TO INSERT DATA INTO RESPECTIVE COLUMNS!
 cur.execute(table_spec)
 
@@ -201,14 +205,14 @@ for each_movie in list_of_movies:
 		screen_name = each_tweet.screen_name
 		num_favs = each_tweet.favorites
 		location = each_tweet.location
-		statement3 = 'INSERT OR IGNORE INTO Users Values (?, ?, ?, ?)'
-		cur.execute(statement3, (user_id, screen_name, num_favs, location))
+		followers = each_tweet.followers
+		statement3 = 'INSERT OR IGNORE INTO Users Values (?, ?, ?, ?, ?)'
+		cur.execute(statement3, (user_id, screen_name, num_favs, location, followers))
 		conn.commit()
 
 
 #Process the data and create an output file!
 #Make queries to the database to grab intersections of data, and then use at least four of the processing mechanisms in the project requirements to find out something interesting or cool or weird about it. 
-#MUST HAVE AT LEAST 3 QUERIES, resulting in information that would have been more difficult to combine without use of the database, and use the results of the queries to process your data
 # Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
 query  = "SELECT * FROM Users"
 users_info = cur.execute(query).fetchall()
@@ -217,6 +221,9 @@ users_info = cur.execute(query).fetchall()
 query = "SELECT * FROM Tweets WHERE retweets > 25"
 more_than_25_rts = cur.execute(query).fetchall()
 
+query = "SELECT * FROM Users WHERE followers > 500"
+more_than_500_followers = cur.execute(query).fetchall()
+
 # # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
 query = "SELECT location FROM Users WHERE num_favs > 0"
 descriptions_fav_users = cur.execute(query).fetchall()
@@ -224,8 +231,13 @@ descriptions_fav_users = [tup[0] for tup in descriptions_fav_users]
 
 # # USE AN INNER JOIN QUERY HERE:
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
-query = 'SELECT screen_name, location FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
+query = 'SELECT screen_name, location, followers FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
 joined_result = cur.execute(query).fetchall()
+for x in joined_result[0:20]:
+	share_joined_result = "Here are the users with over 100 retweets: User with screenname: {} from {} who has {} followers!".format(screen_name, location, followers)
+# print (share_joined_result)
+# print (joined_result)
+# print (share_joined_result)
 
 query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
 good_movies = cur.execute(query).fetchall()
@@ -266,8 +278,14 @@ with open('project_output.txt', 'w') as outfile:
 			output += word + "\n"	
 
 	output += "\n" + "\n" + best_movie1
-
-	
+	output += "\n" + "\n" + "Here are the users with over 100 retweets:"
+	for x in joined_result[0:10]:
+		share_joined_result = "User with screenname: {} from {} who has {} followers!".format(x[0], x[1], x[2])
+		output += "\n" + share_joined_result
+	output += "\n" + "\n" + "These users have over 500 followers:"
+	for x in more_than_500_followers:
+		printed = "User {} from {} has {} followers".format(x[1], x[3], x[4])
+		output += "\n" + printed
 	outfile.write(output)
 
 
@@ -313,15 +331,104 @@ class CachingTests(unittest.TestCase):
 # 	def testTweetclass2(self):
 # 		a = Tweet(Tweet_dict)
 # 		self.assertEqual(type(a.num_favs), type(1))
+# 
 class test_moviesearch(unittest.TestCase):
 	def test_movie_search(self):
-		self.assertEqual(len(movie_search_terms), 3)
-# class testingClasses(unittest.TestCase):
-# 	def test_movie_str_method(self):
-# 		x = Movie()
-# 		y = "hi"
-# 		self.assertEqual(type(x.__str__()), type(y))
+		self.assertEqual(len(movie_search_terms), 6)
+class testingClasses_Movie(unittest.TestCase):
+	def test_movie_class1(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		x = Movie(dict)
+		y = "hi"
+		self.assertEqual(type(x.rating), type(y))
+	def test_movie_class2(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "hi"
+		self.assertEqual(type(a.title), type(b))
+	def test_movie_class3(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = []
+		self.assertEqual(type(a.actors), type(b))
+	def test_movie_class4(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = ""
+		self.assertEqual(type(a.ID), type(b))
+	def test_get_tweets_user_method(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b =  {}
+		self.assertEqual(type(a.get_Tweets_user()), type(b))
 
+# def __init__(self, Tweet_dict):
+# 		self.tweetText = Tweet_dict['text']
+# 		self.tweetID = Tweet_dict['id_str']
+# 		self.user = Tweet_dict['user']['id_str']
+# 		self.num_favs = Tweet_dict['favorite_count']
+# 		self.num_retweets = Tweet_dict['retweet_count']
+#Testing initializer of Tweet class:
+class TestTweetClass(unittest.TestCase):
+	def testTweetie(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		b = ""
+		self.assertEqual(type(a.tweetText), type(b))
+	def testTweetie2(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		b = 3
+		self.assertEqual(type(a.num_favs), type(b))
+	def testTweetie3(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		b = 3
+		self.assertEqual(type(a.num_retweets), type(b))
+	#Testing save_user_data method of Tweet class:
+	def test_save_user_data(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		x = a.save_user_data()
+		b = "hi"
+		self.assertEqual(type(a.screen_name), type(b))
+	def test_save_user_data2(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		x = a.save_user_data()
+		b = 2
+		self.assertEqual(type(a.favorites), type(b))
+	def test_save_user_data3(self):
+		dict = {'text': 'hi', 'id_str': 'hi', 'user' : {'default_profile': False, 'id_str': "x"}, 'favorite_count': 3, "retweet_count": 2}
+		a = Tweet(dict)
+		x = a.save_user_data()
+		b = "New York"
+		self.assertEqual(type(a.location), type(b))
+	def test_str_method(self):
+		dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+		a = Movie(dict)
+		b = "string"
+		self.assertEqual(type(a.__str__()), type("string"))
+
+# #Tests the return value of the get_omdb_data function
+class Test_OMDB_Data(unittest.TestCase):
+	def test_get_omdb_data(self):
+		x = get_omdb_data("Mean+Girls")
+		y = {}
+		self.assertTrue(type(x), type(y))
+	def test_get_omdb_data2(self):
+		x = get_omdb_data("Mean+Girls")
+		y = "hi"
+		self.assertTrue(type(x['imdbRating']), type(y))
+	def test_get_omdb_data3(self):
+		x = get_omdb_data("Mean+Girls")
+		y = []
+		self.assertTrue(type(x['Ratings']), type(y))
+class TestsOther(unittest.TestCase):
+	def test_list_of_movies(self):
+		self.assertTrue(type(list_of_movies), type([]))
+	def test_list_of_tweets(self):
+		self.assertTrue(type(tweet_list), type([]))
 class TestDatabases(unittest.TestCase):
 	def test_users_table(self):
 		conn = sqlite3.connect('finalproject.db')
@@ -341,16 +448,57 @@ class TestDatabases(unittest.TestCase):
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Users');
 		result = cur.fetchall()
-		self.assertTrue(len(result[1])==4,"Testing that there are 4 columns in the Users table")
+		self.assertTrue(len(result[1])==5,"Testing that there are 5 columns in the Users table")
 	def test_movies(self):
 		conn = sqlite3.connect('finalproject.db')
 		cur = conn.cursor()
 		cur.execute('SELECT * FROM Movies');
 		result = cur.fetchall()
-		self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")	
+		self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")
+class TestingQueries(unittest.TestCase):
+	def test_testing_query(self):
+		query = 'SELECT screen_name, location FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
+		joined_result = cur.execute(query).fetchall()
+		self.assertEqual(type(joined_result), type([]))
+	def testing_another_query(self):
+		query = "SELECT * FROM Tweets WHERE retweets > 25"
+		more_than_25_rts = cur.execute(query).fetchall()
+		self.assertEqual(type(more_than_25_rts), type([]))
+	def testing_followers_query(self):
+		query = "SELECT * FROM Users WHERE followers > 500"
+		more_than_500_followers = cur.execute(query).fetchall()
+		self.assertEqual(type(more_than_500_followers), type([]))
+	def testing_users_info(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		x = ('hi', 'bye')
+		self.assertEqual(type(users_info[0]), type(x))
+	def testing_users_info2(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		x = ('hi', 'bye')
+		self.assertEqual(len(users_info[0]), 5)
+	def testing_users_info3(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		x = "hi"
+		self.assertEqual(type(users_info[0][0]), type("x"))
+	def testing_users_info4(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		self.assertEqual(type(users_info[0][4]), type(3))
+	def testing_users_info5(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		self.assertEqual(type(users_info[0][3]), type("hi"))
+	def testing_users_info6(self):
+		query  = "SELECT * FROM Users"
+		users_info = cur.execute(query).fetchall()
+		self.assertTrue(len(users_info) > 1)
+
 if __name__ == "__main__":
 	unittest.main(verbosity=2)
 
 #README DOC
 #Finish output file using two more queries 
-#Finish test cases ( 2 for each method ) and make sure all pass
+
