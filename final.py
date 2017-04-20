@@ -281,20 +281,7 @@ for x in tweets:
 # ## Manipulating data with comprehensions & libraries and saving that to an output file called project_output.txt
 
 with open('project_output.txt', 'w') as outfile:
-	output = """
-		my output{}
-"""
-	for movie in cur.execute("SELECT movie_title, movie_id from Movies").fetchall():
-		output += "unique words in tweets from {}: \n".format(movie[0])
-		unique_words = set()
-		for tweet in cur.execute("SELECT tweet_text from Tweets WHERE Tweets.movie = ?", (movie[1],)).fetchall():
-			tweet_text = tweet[0]
-			match = re.findall(r'(\S+)', tweet_text)
-			if match:
-				for each in match:
-					unique_words.add(each)
-		for word in unique_words:
-			output += word + "\n"	
+	output = "Here are summary stats for the following movies: Mean Girls, Beauty and the Beast, The Hunger Games, Catching Fire, Gifted and Up. Created on April 20th, 2017." + "\n" + "\n"	
 
 	output += "\n" + "\n" + best_movie_
 	output += "\n" + "\n" + "What's popular? Well here are the users with over 100 retweets:"
@@ -305,6 +292,17 @@ with open('project_output.txt', 'w') as outfile:
 	for x in more_than_500_followers:
 		printed = "User {} from {} has {} followers".format(x[1], x[3], x[4])
 		output += "\n" + printed
+	for movie in cur.execute("SELECT movie_title, movie_id from Movies").fetchall():
+		output += "\n" + "\n" + "Here are each of the unique words (and non-words/urls/symbols/etc.) in tweets from {}: \n".format(movie[0])
+		unique_words = set()
+		for tweet in cur.execute("SELECT tweet_text from Tweets WHERE Tweets.movie = ?", (movie[1],)).fetchall():
+			tweet_text = tweet[0]
+			match = re.findall(r'(\S+)', tweet_text)
+			if match:
+				for each in match:
+					unique_words.add(each)
+		for word in unique_words:
+			output += word + "\n"	
 	outfile.write(output)
 
 
