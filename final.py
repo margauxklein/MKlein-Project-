@@ -259,7 +259,7 @@ for x in tweets:
 		for each in match:
 			unique_words.add(each)
 
-# ## Manipulating data with comprehensions & libraries
+# ## Manipulating data with comprehensions & libraries and saving that to an output file called project_output.txt
 
 with open('project_output.txt', 'w') as outfile:
 	output = """
@@ -291,46 +291,11 @@ with open('project_output.txt', 'w') as outfile:
 
 
 
-# # Write code to create a dictionary whose keys are Twitter screen names and whose associated values are lists of tweet texts that that user posted. You may need to make additional queries to your database! To do this, you can use, and must use at least one of: the DefaultDict container in the collections library, a dictionary comprehension, list comprehension(s). Y
-# # You should save the final dictionary in a variable called twitter_info_diction.
-# query = "SELECT description from USERS"
-# description_text = cur.execute(query).fetchall()
-# description_text2= []
-# description_text2 = [y for x in description_text for y in x]
-# twitter_info_diction = {}
-# for x in screen_names:
-# 	twitter_info_diction[x] = description_text2
-
-
 # Write data to a text file - a summary stats page
 #Create classes of test cases:
 class CachingTests(unittest.TestCase):
 	def test_cache_diction(self):
 		self.assertEqual(type(CACHE_DICTION),type({}),"Testing whether you have a CACHE_DICTION dictionary")
-	# def test_cache_file(self):
-	# 	f = open("SI206_project_final.json","r")
-	# 	s = f.read()
-	# 	f.close()
-	# 	self.assertEqual(type(s),type({}),"Doesn't look like you have a cache file with the right name / with content in it")	
-# class TestCases(unittest.TestCase):
-# 	#Create a test to ensure that list_of_tweets is a list
-# 	def test_list_of_tweets(self):
-# 		self.assertEqual(type(list_of_tweets), type([]))
-# 	#Create a test to make sure that list_of_movies is a list
-# 	def test_list_of_movies(self):
-# 		self.assertEqual(type(test_list_of_movies), type([]))
-# 	#create a test to make sure that the type of OMDB_dict is a dictionary
-# 	def test_type_OMDB_dict(self):
-# 		self.assertEqual(type(OMDB_dict), type({}))
-
-
-# class TestClasses(unittest.TestCase):
-# 	def testTweetclass(self):
-# 		x = Tweet(Tweet_dict)
-# 		self.assertEqual(type(x.tweetText), type("hi"))
-# 	def testTweetclass2(self):
-# 		a = Tweet(Tweet_dict)
-# 		self.assertEqual(type(a.num_favs), type(1))
 # 
 class test_moviesearch(unittest.TestCase):
 	def test_movie_search(self):
@@ -362,12 +327,6 @@ class testingClasses_Movie(unittest.TestCase):
 		b =  {}
 		self.assertEqual(type(a.get_Tweets_user()), type(b))
 
-# def __init__(self, Tweet_dict):
-# 		self.tweetText = Tweet_dict['text']
-# 		self.tweetID = Tweet_dict['id_str']
-# 		self.user = Tweet_dict['user']['id_str']
-# 		self.num_favs = Tweet_dict['favorite_count']
-# 		self.num_retweets = Tweet_dict['retweet_count']
 #Testing initializer of Tweet class:
 class TestTweetClass(unittest.TestCase):
 	def testTweetie(self):
@@ -455,6 +414,7 @@ class TestDatabases(unittest.TestCase):
 		cur.execute('SELECT * FROM Movies');
 		result = cur.fetchall()
 		self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")
+#Testing some of the queries
 class TestingQueries(unittest.TestCase):
 	def test_testing_query(self):
 		query = 'SELECT screen_name, location FROM Users INNER JOIN Tweets ON Tweets.retweets WHERE retweets> 100'
@@ -499,7 +459,44 @@ class TestingQueries(unittest.TestCase):
 		query  = "SELECT * FROM Users"
 		users_info = cur.execute(query).fetchall()
 		self.assertTrue(len(users_info) > 1)
-
+	def testing_best_movies_(self):
+		query = 'SELECT movie_title FROM Movies WHERE IMDB_rating > 8'
+		good_movies = cur.execute(query).fetchall()
+		best_movies = [list(elem) for elem in good_movies]
+		self.assertEqual(type(best_movies), type([]))
+	def testing_counter(self):
+		query = "SELECT tweet_text from Tweets"
+		tweets = cur.execute(query).fetchall()
+		count_a = 0
+		unique_words = set()
+		for x in tweets:
+			if 'a' in x[0]:
+				count_a += 1
+		self.assertEqual(type(count_a), type(2))
+	def test_unique_words(self):
+		query = "SELECT tweet_text from Tweets"
+		tweets = cur.execute(query).fetchall()
+		count_a = 0
+		unique_words = set()
+		for x in tweets:
+			match = re.findall(r'(\S+)', x[0])
+			if match:
+				for each in match:
+					unique_words.add(each)
+		self.assertTrue(len(unique_words) >1)
+	def test_unique_words2(self):
+		query = "SELECT tweet_text from Tweets"
+		tweets = cur.execute(query).fetchall()
+		count_a = 0
+		unique_words = set()
+		a = set()
+		for x in tweets:
+			match = re.findall(r'(\S+)', x[0])
+			if match:
+				for each in match:
+					unique_words.add(each)
+		self.assertEqual(type(unique_words), type(a))
+		
 if __name__ == "__main__":
 	unittest.main(verbosity=2)
 
