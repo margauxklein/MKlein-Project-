@@ -23,7 +23,7 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ##### END TWEEPY SETUP CODE
 
 #Set up caching pattern, save data into cache file called SI206_project_final.json
-CACHE_FNAME = "SI206_project_final.json"
+CACHE_FNAME = "206_project_cache.json"
 # Put the rest of your caching setup here:
 try:
 	cache_file = open(CACHE_FNAME,'r')
@@ -67,6 +67,7 @@ class Movie():
 	#Write a method to return a string of the title and director of the movie in a formatted way
 	def __str__(self):
 		x = "Movie title: {} is directed by {}".format(self.title, self.director)
+		# print(x)
 		return x 
 	#create a function that will search for the director name in the cache_diction. if it exists, retrieve that data. if the director's name is not in cache diction, make a request to the API
 	def get_Tweets_user(self):
@@ -87,6 +88,11 @@ class Movie():
 # a = Movie(dict)		
 # b = a.__str__()
 # print(b)
+#dict = {'Title': "The Game Plan", 'imdbID': "hi", "Director": 'larry', 'imdbRating': '8', 'Actors': 'Beyonce, Selena Gomez, Lindsay Lohan', 'Country': 'USA, Canada', 'Awards': 7, 'Language': "English, Spanish"}
+# a = Movie(dict)		
+# b = a.__str__()
+# print(b)
+
 #Create a class to handle the Twitter data:
 class Tweet():
 	#initializing function will accept Tweet_dict as input 
@@ -122,10 +128,14 @@ class Tweet():
 #Create a list of instances of the Movie class called list_of_movies
 list_of_movies = []
 #iterate through each movie in the list "movie_search_terms". for every movie in that list, call the get_omdb_data function on it
+movie_summary = []
 for x in movie_search_terms:
 	movie_search = get_omdb_data(x)
 	y = Movie(movie_search)
+	a = y.__str__()
+	movie_summary.append(a)
 	list_of_movies.append(y)
+#print(movie_summary)
 	#print(y.get_Tweets_user()["statuses"][0])
 tweet_list = []
 for x in list_of_movies:
@@ -209,7 +219,6 @@ for each_movie in list_of_movies:
 		statement3 = 'INSERT OR IGNORE INTO Users Values (?, ?, ?, ?, ?)'
 		cur.execute(statement3, (user_id, screen_name, num_favs, location, followers))
 		conn.commit()
-
 
 #Process the data and create an output file!
 #Make queries to the database to grab intersections of data, and then use at least four of the processing mechanisms in the project requirements to find out something interesting or cool or weird about it. 
